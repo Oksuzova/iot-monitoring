@@ -22,6 +22,7 @@ RUN touch /src/alerts_service/__init__.py \
 RUN echo '#!/bin/python3\n\
 import os\n\
 import pdoc\n\
+import sys\n\
 \n\
 modules = [\n\
     "alerts_service",\n\
@@ -34,10 +35,14 @@ modules = [\n\
 pdoc.render.configure(docformat="google", show_source=False)\n\
 \n\
 for module in modules:\n\
-    doc = pdoc.pdoc(module, skip_errors=True)\n\
-    output_file = os.path.join("/output", f"{module}.html")\n\
-    with open(output_file, "w", encoding="utf-8") as f:\n\
-        f.write(doc)' > /src/run_pdoc.py && \
+    try:\n\
+        doc = pdoc.pdoc(module)\n\
+        output_file = os.path.join("/output", f"{module}.html")\n\
+        with open(output_file, "w", encoding="utf-8") as f:\n\
+            f.write(doc)\n\
+    except Exception as e:\n\
+        print(f"Warning: Could not generate docs for {module}: {e}", file=sys.stderr)\n\
+        continue' > /src/run_pdoc.py && \
     chmod +x /src/run_pdoc.py
 
 ENV PYTHONPATH=/src
