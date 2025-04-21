@@ -1,0 +1,128 @@
+# Docker Compose configuration for IoT Sensor Data Processing System
+# Version 3.8 enables the latest features needed for service configuration
+version: '3.8'
+
+services:
+  # ZooKeeper service for Kafka cluster coordination
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"  # Expose ZooKeeper client port
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - iot_network
+
+  # Kafka broker service for message streaming
+  kafka:
+    image: wurstmeister/kafka
+    environment:
+      # Configure Kafka broker connectivity and protocol settings
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_BROKER_ID: 1
+    ports:
+      - "9092:9092"  # Expose Kafka broker port
+    depends_on:
+      - zookeeper
+    command: [ "/bin/sh", "-c", "sleep 20 && start-kafka.sh" ]  # Ensure ZooKeeper is ready
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    networks:
+      - iot_network
+
+  # MQTT broker service for IoT device communication
+  mosquitto:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"  # Expose MQTT port
+    volumes:
+      - ./mosquitto/config:/mosquitto/config  # Mount Mosquitto configuration
+    networks:
+      - iot_network
+
+  # Service to collect data from MQTT and forward to Kafka
+  collector_service:
+    build: ./collector_service
+    environment:
+      # MQTT connection settings
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=sensor/data
+      # Kafka connection settings
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=iot.sensor.data
+    depends_on:
+      - kafka
+      - mosquitto
+    networks:
+      - iot_network
+
+  # REST API service for data access and visualization
+  flask_api:
+    build: ./flask_api
+    environment:
+      # Kafka connection settings
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=iot.sensor.data
+      # Database connection settings
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - DB_NAME=sensors
+      - DB_USER=user
+      - DB_PASSWORD=password
+    depends_on:
+      - kafka
+      - postgres_db
+    ports:
+      - "5001:5000"  # Expose API port
+    networks:
+      - iot_network
+
+  # Service for data analysis and statistics
+  analytics_service:
+    build: ./analytics_service
+    depends_on:
+      - kafka
+    networks:
+      - iot_network
+
+  # Service for monitoring and generating alerts
+  alerts_service:
+    build: ./alerts_service
+    depends_on:
+      - kafka
+    networks:
+      - iot_network
+
+  # PostgreSQL database for persistent storage
+  postgres_db:
+    image: postgres:13
+    environment:
+      # Database initialization settings
+      POSTGRES_DB: sensors
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistent storage
+    ports:
+      - "5432:5432"  # Expose PostgreSQL port
+    networks:
+      - iot_network
+
+# Named volumes for persistent data storage
+volumes:
+  postgres_data:
+    driver: local
+
+# Custom network for service isolation
+networks:
+  iot_network:
+    driver: bridge
