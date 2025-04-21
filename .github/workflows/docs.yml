@@ -22,33 +22,23 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: |
-          pip install pdoc
+      - name: Install pdoc
+        run: pip install pdoc
+
+      - name: Create docs directory
+        run: mkdir -p docs
 
       - name: Generate Analytics Service Docs
-        run: |
-          cd analytics_service
-          pip install -r requirements.txt
-          pdoc -o ../docs/analytics app.py models.py
+        run: pdoc --docformat google --no-show-source --output-dir docs/analytics analytics_service/
 
       - name: Generate Collector Service Docs
-        run: |
-          cd collector_service
-          pip install -r requirements.txt
-          pdoc -o ../docs/collector bridge.py
+        run: pdoc --docformat google --no-show-source --output-dir docs/collector collector_service/
 
       - name: Generate Flask API Docs
-        run: |
-          cd flask_api
-          pip install -r requirements.txt
-          pdoc -o ../docs/api app.py
+        run: pdoc --docformat google --no-show-source --output-dir docs/api flask_api/
 
       - name: Generate Alerts Service Docs
-        run: |
-          cd alerts_service
-          pip install -r requirements.txt
-          pdoc -o ../docs/alerts app.py
+        run: pdoc --docformat google --no-show-source --output-dir docs/alerts alerts_service/
 
       - name: Create Index Page
         run: |
@@ -60,10 +50,10 @@ jobs:
           <body>
               <h1>IoT Monitoring Services Documentation</h1>
               <ul>
-                  <li><a href="analytics/app.html">Analytics Service</a></li>
-                  <li><a href="collector/bridge.html">Collector Service</a></li>
-                  <li><a href="api/app.html">Flask API</a></li>
-                  <li><a href="alerts/app.html">Alerts Service</a></li>
+                  <li><a href="analytics/analytics_service.html">Analytics Service</a></li>
+                  <li><a href="collector/collector_service.html">Collector Service</a></li>
+                  <li><a href="api/flask_api.html">Flask API</a></li>
+                  <li><a href="alerts/alerts_service.html">Alerts Service</a></li>
               </ul>
           </body>
           </html>' > docs/index.html
