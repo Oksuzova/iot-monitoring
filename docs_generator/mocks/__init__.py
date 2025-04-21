@@ -1,4 +1,6 @@
+# mocks/__init__.py
 import sys
+from unittest.mock import MagicMock
 from .kafka_mock import MockKafka
 from .mqtt_mock import mock_mqtt
 from .sqlalchemy_mock import MockSQLAlchemy
@@ -16,7 +18,8 @@ def setup_mocks():
     sys.modules["paho.mqtt.client"] = mock_mqtt
 
     # Setup SQLAlchemy mocks
-    sys.modules["sqlalchemy"] = MockSQLAlchemy()
+    mock_sqlalchemy = MockSQLAlchemy()
+    sys.modules["sqlalchemy"] = mock_sqlalchemy
     sys.modules["sqlalchemy.orm"] = MagicMock()
     sys.modules["sqlalchemy.ext"] = MagicMock()
     sys.modules["sqlalchemy.ext.declarative"] = MagicMock()
