@@ -1,14 +1,12 @@
 FROM python:3.11-slim
 
-WORKDIR /src
+WORKDIR /app
 
 RUN pip install --no-cache-dir pdoc
 
-COPY . .
-
-COPY docs_generator/generate_docs.py /src/
-RUN chmod +x /src/generate_docs.py
+COPY docs_generator/generate_docs.py /app/
+RUN chmod +x /app/generate_docs.py
 
 ENV PYTHONPATH=/src
 
-CMD ["python", "/src/generate_docs.py"]
+CMD ["python", "/app/generate_docs.py"]

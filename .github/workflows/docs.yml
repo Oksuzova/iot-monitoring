@@ -20,12 +20,12 @@ jobs:
       - name: Build docs Docker image
         run: docker build -t docs_generator -f docs_generator/Dockerfile .
 
-      - name: Generate docs into /docs
+      - name: Generate docs
         run: |
-          mkdir docs 
+          mkdir -p docs
           docker run --rm \
-            -v ${{ github.workspace }}:/src \
-            -v ${{ github.workspace }}/docs:/output \
+            -v $(pwd):/src \
+            -v $(pwd)/docs:/output \
             docs_generator
 
       - name: Deploy to GitHub Pages
