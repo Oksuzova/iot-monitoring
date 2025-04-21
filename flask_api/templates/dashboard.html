@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IoT Monitoring Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm border-bottom">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold text-primary" href="/">📊 IoT Dashboard</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto d-flex gap-2">
+                <li class="nav-item">
+                    <a class="nav-link" href="/alerts-ui">🚨 Alerts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/temperature-ui">🌡️ Temperature</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/humidity-ui">💧 Humidity</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/co2-ui">🫁 CO₂</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/pm25-ui">🌫️ PM2.5</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container py-4">
+    <h1 class="mb-4">📊 IoT Monitoring Dashboard</h1>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#summary" type="button">Summary</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#alerts" type="button">Alerts</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#temperature" type="button">Temperature</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#humidity" type="button">Humidity</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#co2" type="button">CO₂</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pm25" type="button">PM2.5</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Summary -->
+        <div class="tab-pane fade show active" id="summary">
+            <div class="row mb-4">
+                <div class="col-md-3"><div class="card bg-primary text-white"><div class="card-body"><h5>🌡️ Avg Temp</h5><p id="avgTemp">-- °C</p></div></div></div>
+                <div class="col-md-3"><div class="card bg-success text-white"><div class="card-body"><h5>💧 Avg Humidity</h5><p id="avgHumidity">-- %</p></div></div></div>
+                <div class="col-md-3"><div class="card bg-danger text-white"><div class="card-body"><h5>🫁 Max CO₂</h5><p id="maxCO2">-- ppm</p></div></div></div>
+                <div class="col-md-3"><div class="card bg-warning text-white"><div class="card-body"><h5>🌫️ Max PM2.5</h5><p id="maxPM">-- µg/m³</p></div></div></div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="tab-pane fade" id="alerts">
+            <h5>Live Alerts</h5>
+            <ul id="alertList" class="list-group"></ul>
+        </div>
+
+        <!-- Temperature -->
+        <div class="tab-pane fade" id="temperature">
+            <h5>Temperature (Last 50)</h5>
+            <canvas id="temperatureChart"></canvas>
+        </div>
+
+        <!-- Humidity -->
+        <div class="tab-pane fade" id="humidity">
+            <h5>Humidity (Last 50)</h5>
+            <canvas id="humidityChart"></canvas>
+        </div>
+
+        <!-- CO2 -->
+        <div class="tab-pane fade" id="co2">
+            <h5>CO₂ (Last 50)</h5>
+            <canvas id="co2Chart"></canvas>
+        </div>
+
+        <!-- PM2.5 -->
+        <div class="tab-pane fade" id="pm25">
+            <h5>PM2.5 (Last 50)</h5>
+            <canvas id="pm25Chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function fetchAlerts() {
+        const res = await fetch("/api/alerts?limit=10");
+        const data = await res.json();
+        const list = document.getElementById("alertList");
+        list.innerHTML = "";
+        data.forEach(item => {
+            const li = document.createElement("li");
+            li.className = "list-group-item";
+            li.textContent = `Sensor ${item.sensor_id} | ${item.parameter}: ${item.value} > ${item.threshold} @ ${item.timestamp}`;
+            list.appendChild(li);
+        });
+    }
+
+    async function fetchCharts() {
+        const res = await fetch("/api/data");
+        const data = await res.json();
+
+        const temperatureData = data.filter(d => d.sensor_type === "temperature_humidity").slice(0, 50).reverse();
+        const airData = data.filter(d => d.sensor_type === "air_quality").slice(0, 50).reverse();
+
+        const tempLabels = temperatureData.map(d => new Date(d.timestamp).toLocaleTimeString());
+        const temps = temperatureData.map(d => d.data.temperature);
+        const hums = temperatureData.map(d => d.data.humidity);
+
+        const co2s = airData.map(d => d.data.co2);
+        const pm25s = airData.map(d => d.data.pm25);
+        const airLabels = airData.map(d => new Date(d.timestamp).toLocaleTimeString());
+
+        const createChart = (id, label, data, color) => {
+            new Chart(document.getElementById(id), {
+                type: "line",
+                data: {
+                    labels: id.includes("temperature") || id.includes("humidity") ? tempLabels : airLabels,
+                    datasets: [{
+                        label,
+                        data,
+                        borderColor: color,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                }
+            });
+        };
+
+        createChart("temperatureChart", "Temperature (°C)", temps, "rgba(255, 99, 132, 1)");
+        createChart("humidityChart", "Humidity (%)", hums, "rgba(54, 162, 235, 1)");
+        createChart("co2Chart", "CO₂ (ppm)", co2s, "rgba(255, 159, 64, 1)");
+        createChart("pm25Chart", "PM2.5 (µg/m³)", pm25s, "rgba(153, 102, 255, 1)");
+    }
+
+    async function fetchSummary() {
+        const res = await fetch("/api/data");
+        const data = await res.json();
+
+        const temp = data.filter(d => d.sensor_type === "temperature_humidity").map(d => d.data.temperature);
+        const hum = data.filter(d => d.sensor_type === "temperature_humidity").map(d => d.data.humidity);
+        const co2 = data.filter(d => d.sensor_type === "air_quality").map(d => d.data.co2);
+        const pm = data.filter(d => d.sensor_type === "air_quality").map(d => d.data.pm25);
+
+        const avg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : "--";
+        const max = arr => arr.length ? Math.max(...arr).toFixed(2) : "--";
+
+        document.getElementById("avgTemp").textContent = avg(temp) + " °C";
+        document.getElementById("avgHumidity").textContent = avg(hum) + " %";
+        document.getElementById("maxCO2").textContent = max(co2) + " ppm";
+        document.getElementById("maxPM").textContent = max(pm) + " µg/m³";
+    }
+
+    fetchAlerts();
+    fetchCharts();
+    fetchSummary();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

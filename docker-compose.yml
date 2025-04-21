@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - iot_network
+
+  kafka:
+    image: wurstmeister/kafka
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_BROKER_ID: 1
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    command: [ "/bin/sh", "-c", "sleep 20 && start-kafka.sh" ]
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    networks:
+      - iot_network
+
+  mosquitto:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+    networks:
+      - iot_network
+
+  collector_service:
+    build: ./collector_service
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=sensor/data
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=iot.sensor.data
+    depends_on:
+      - kafka
+      - mosquitto
+    networks:
+      - iot_network
+
+  flask_api:
+    build: ./flask_api
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=iot.sensor.data
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - DB_NAME=sensors
+      - DB_USER=user
+      - DB_PASSWORD=password
+    depends_on:
+      - kafka
+      - postgres_db
+    ports:
+      - "5001:5000"
+    networks:
+      - iot_network
+
+  analytics_service:
+    build: ./analytics_service
+    depends_on:
+      - kafka
+    networks:
+      - iot_network
+
+  alerts_service:
+    build: ./alerts_service
+    depends_on:
+      - kafka
+    networks:
+      - iot_network
+
+  postgres_db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: sensors
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - iot_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  iot_network:
+    driver: bridge
