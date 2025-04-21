@@ -23,8 +23,8 @@ def generate_temp_hum(sensor):
         "sensor_id": sensor,
         "sensor_type": "temperature_humidity",
         "data": {
-            "temperature": round(random.uniform(20.0, 30.0), 2),
-            "humidity": round(random.uniform(40.0, 60.0), 2)
+            "temperature": round(random.uniform(25.0, 28.0), 2),
+            "humidity": round(random.uniform(45.0, 50.0), 2)
         },
         "timestamp": int(time.time())
     }
@@ -35,8 +35,8 @@ def generate_air_quality(sensor):
         "sensor_id": sensor,
         "sensor_type": "air_quality",
         "data": {
-            "co2": round(random.uniform(300.0, 800.0), 2),
-            "pm25": round(random.uniform(0.0, 50.0), 2)
+            "co2": round(random.uniform(500.0, 600.0), 2),
+            "pm25": round(random.uniform(0.0, 20.0), 2)
         },
         "timestamp": int(time.time())
     }
@@ -47,8 +47,8 @@ def generate_trigger_alert(sensor):
         "sensor_id": sensor,
         "sensor_type": "temperature_humidity",
         "data": {
-            "temperature": 35.0,
-            "humidity": 50.0
+            "temperature": round(random.uniform(28.0, 35.0), 2),
+            "humidity": round(random.uniform(70.0, 90.0), 2)
         },
         "timestamp": int(time.time())
     }
@@ -73,7 +73,7 @@ while True:
         time.sleep(1)
 
     now = time.time()
-    if now - last_alert_time > 10:
+    if now - last_alert_time > 60:
         alert_sensor_id = random.choice(sensor_ids)
         alert_payload = json.dumps(generate_trigger_alert(alert_sensor_id))
         client.publish(TOPIC, alert_payload)

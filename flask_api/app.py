@@ -1,3 +1,16 @@
+"""IoT Sensor Data API Service.
+
+This module implements a Flask-based REST API for accessing IoT sensor data,
+alerts, and statistical aggregations. It also serves web-based dashboards
+for data visualization.
+
+The API provides endpoints for:
+- Raw sensor data retrieval
+- Alert history and filtering
+- Aggregated statistics
+- Time-window based statistics
+"""
+
 from flask import Flask, jsonify, request
 from db import init_db, SessionLocal
 from kafka_consumer import consume_kafka
@@ -9,39 +22,81 @@ from flask import render_template
 app = Flask(__name__)
 init_db()
 
-
 @app.route("/")
 def dashboard():
+    """Render the main dashboard page.
+
+    Returns:
+        str: Rendered HTML template for the main dashboard.
+    """
     return render_template("dashboard.html")
 
 
 @app.route("/alerts-ui")
 def alerts_ui():
+    """Render the alerts dashboard page.
+
+    Returns:
+        str: Rendered HTML template for the alerts dashboard.
+    """
     return render_template("alerts.html")
 
 
 @app.route("/temperature-ui")
 def temperature_ui():
+    """Render the temperature data dashboard page.
+
+    Returns:
+        str: Rendered HTML template for temperature visualization.
+    """
     return render_template("temperature_data.html")
 
 
 @app.route("/humidity-ui")
 def humidity_ui():
+    """Render the humidity data dashboard page.
+
+    Returns:
+        str: Rendered HTML template for humidity visualization.
+    """
     return render_template("humidity_data.html")
 
 
 @app.route("/co2-ui")
 def co2_ui():
+    """Render the CO2 data dashboard page.
+
+    Returns:
+        str: Rendered HTML template for CO2 visualization.
+    """
     return render_template("air_co2_data.html")
 
 
 @app.route("/pm25-ui")
 def pm25_ui():
+    """Render the PM2.5 data dashboard page.
+
+    Returns:
+        str: Rendered HTML template for PM2.5 visualization.
+    """
     return render_template("pm25_data.html")
 
 
 @app.route("/api/alerts")
 def get_alerts():
+    """Retrieve alert history with optional filtering.
+
+    Query Parameters:
+        limit (int): Maximum number of alerts to return (default: 50)
+        sensor_id (str): Filter by sensor ID
+        sensor_type (str): Filter by sensor type
+        parameter (str): Filter by measured parameter
+        from (str): ISO format timestamp for start of time range
+        to (str): ISO format timestamp for end of time range
+
+    Returns:
+        flask.Response: JSON array of alert records
+    """
     session = SessionLocal()
     limit = int(request.args.get("limit", 50))
     sensor_id = request.args.get("sensor_id")
@@ -86,6 +141,11 @@ def get_alerts():
 
 @app.route("/api/data")
 def get_data():
+    """Retrieve recent raw sensor data.
+
+    Returns:
+        flask.Response: JSON array of the 100 most recent sensor readings
+    """
     session = SessionLocal()
     rows = session.query(SensorData).order_by(SensorData.timestamp.desc()).limit(100).all()
     session.close()
@@ -99,6 +159,17 @@ def get_data():
 
 @app.route("/api/aggregated")
 def get_aggregated():
+    """Retrieve aggregated sensor statistics with optional filtering.
+
+    Query Parameters:
+        limit (int): Maximum number of records to return (default: 50)
+        sensor_id (str): Filter by sensor ID
+        from (str): ISO format timestamp for start of time range
+        to (str): ISO format timestamp for end of time range
+
+    Returns:
+        flask.Response: JSON array of aggregated statistics
+    """
     session = SessionLocal()
     limit = int(request.args.get("limit", 50))
     sensor_id = request.args.get("sensor_id")
@@ -142,6 +213,20 @@ def get_aggregated():
 
 @app.route("/api/windows/<window_type>")
 def get_window_stats(window_type):
+    """Retrieve time-window based statistics for a specific window type.
+
+    Args:
+        window_type (str): The type of time window (e.g., 'hourly', 'daily')
+
+    Query Parameters:
+        limit (int): Maximum number of records to return (default: 100)
+        sensor_id (str): Filter by sensor ID
+        from (str): ISO format timestamp for start of time range
+        to (str): ISO format timestamp for end of time range
+
+    Returns:
+        flask.Response: JSON array of time window statistics
+    """
     session = SessionLocal()
     limit = int(request.args.get("limit", 100))
     sensor_id = request.args.get("sensor_id")
