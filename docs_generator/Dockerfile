@@ -12,50 +12,30 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     python-dotenv
 
-# Create comprehensive mock modules script
-RUN echo 'import sys\nfrom unittest.mock import MagicMock\n\n\
-# Mock Kafka\n\
-class MockKafka:\n\
-    Consumer = MagicMock()\n\
-    KafkaConsumer = MagicMock()\n\
-    errors = MagicMock()\n\
-\n\
-sys.modules["kafka"] = MockKafka()\n\
-sys.modules["kafka.consumer"] = MagicMock()\n\
-sys.modules["kafka.consumer.group"] = MagicMock()\n\
-sys.modules["kafka.errors"] = MagicMock()\n\
-\n\
-# Mock MQTT\n\
-sys.modules["paho"] = MagicMock()\n\
-sys.modules["paho.mqtt"] = MagicMock()\n\
-sys.modules["paho.mqtt.client"] = MagicMock()\n\
-\n\
-# Mock SQLAlchemy\n\
-class MockEngine:\n\
-    def connect(self):\n\
-        return MagicMock()\n\
-    def begin(self):\n\
-        return MagicMock()\n\
-    def raw_connection(self):\n\
-        return MagicMock()\n\
-\n\
-class MockSQLAlchemy:\n\
-    def create_engine(self, *args, **kwargs):\n\
-        return MockEngine()\n\
-    Column = MagicMock()\n\
-    Integer = MagicMock()\n\
-    Float = MagicMock()\n\
-    String = MagicMock()\n\
-    DateTime = MagicMock()\n\
-    ForeignKey = MagicMock()\n\
-    create_engine = MagicMock(return_value=MockEngine())\n\
-\n\
-sys.modules["sqlalchemy"] = MockSQLAlchemy()\n\
-sys.modules["sqlalchemy.orm"] = MagicMock()\n\
-sys.modules["sqlalchemy.ext"] = MagicMock()\n\
-sys.modules["sqlalchemy.ext.declarative"] = MagicMock()' > /src/mock_modules.py
+# Create directory structure
+RUN mkdir -p /src/alerts_service \
+    /src/analytics_service \
+    /src/collector_service \
+    /src/flask_api \
+    /src/mocks
 
-# Create mock environment variables
+# Copy mocks
+COPY docs_generator/mocks /src/mocks
+
+# Copy service files
+COPY alerts_service/*.py /src/alerts_service/
+COPY analytics_service/*.py /src/analytics_service/
+COPY collector_service/*.py /src/collector_service/
+COPY flask_api/*.py /src/flask_api/
+COPY sensor_script.py /src/
+
+# Create empty __init__.py files
+RUN touch /src/alerts_service/__init__.py \
+    /src/analytics_service/__init__.py \
+    /src/collector_service/__init__.py \
+    /src/flask_api/__init__.py
+
+# Set environment variables
 ENV KAFKA_BROKER=localhost:9092 \
     MQTT_BROKER=localhost \
     MQTT_PORT=1883 \
@@ -68,29 +48,14 @@ ENV KAFKA_BROKER=localhost:9092 \
     DB_PASSWORD=password \
     PYTHONPATH=/src
 
-# Create directory structure and copy files
-RUN mkdir -p /src/alerts_service \
-    /src/analytics_service \
-    /src/collector_service \
-    /src/flask_api
-
-COPY alerts_service/*.py /src/alerts_service/
-COPY analytics_service/*.py /src/analytics_service/
-COPY collector_service/*.py /src/collector_service/
-COPY flask_api/*.py /src/flask_api/
-COPY sensor_script.py /src/
-
-RUN touch /src/alerts_service/__init__.py \
-    /src/analytics_service/__init__.py \
-    /src/collector_service/__init__.py \
-    /src/flask_api/__init__.py
-
 # Create wrapper script
 RUN echo '#!/bin/python3\n\
-import mock_modules\n\
+from mocks import setup_mocks\n\
 import os\n\
 import sys\n\
 import pdoc\n\
+\n\
+setup_mocks()\n\
 \n\
 modules = [\n\
     "alerts_service",\n\
