@@ -24,8 +24,12 @@ jobs:
         run: |
           mkdir -p docs
           docker run --rm \
-            -v $(pwd):/src \
-            -v $(pwd)/docs:/output \
+            -v ${PWD}/alerts_service:/app/src/alerts_service \
+            -v ${PWD}/analytics_service:/app/src/analytics_service \
+            -v ${PWD}/collector_service:/app/src/collector_service \
+            -v ${PWD}/flask_api:/app/src/flask_api \
+            -v ${PWD}/sensor_script.py:/app/src/sensor_script.py \
+            -v ${PWD}/docs:/app/output \
             docs_generator
 
       - name: Deploy to GitHub Pages
