@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  pages: write
+
 jobs:
   build-docs:
     runs-on: ubuntu-latest
@@ -18,12 +22,14 @@ jobs:
 
       - name: Generate docs into /docs
         run: |
-          mkdir docs
-          docker run --rm -v ${{ github.workspace }}/docs:/output docs_generator
+          mkdir docs 
+          docker run --rm \
+            -v ${{ github.workspace }}:/src \
+            -v ${{ github.workspace }}/docs:/output \
+            docs_generator
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
-          publish_branch: gh-pages
