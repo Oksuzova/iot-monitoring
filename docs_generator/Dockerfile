@@ -12,8 +12,17 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     python-dotenv
 
-# Create a mock implementation script
-RUN echo 'import sys\nfrom unittest.mock import MagicMock\n\nsys.modules["kafka"] = MagicMock()\nsys.modules["kafka.consumer"] = MagicMock()\nsys.modules["kafka.consumer.group"] = MagicMock()\nsys.modules["kafka.errors"] = MagicMock()' > /src/mock_kafka.py
+# Create mock modules script
+RUN echo 'import sys\nfrom unittest.mock import MagicMock\n\n\
+class MockKafka:\n\
+    Consumer = MagicMock()\n\
+    KafkaConsumer = MagicMock()\n\
+    errors = MagicMock()\n\
+\n\
+sys.modules["kafka"] = MockKafka()\n\
+sys.modules["kafka.consumer"] = MagicMock()\n\
+sys.modules["kafka.consumer.group"] = MagicMock()\n\
+sys.modules["kafka.errors"] = MagicMock()' > /src/mock_kafka.py
 
 # Create mock environment variables
 ENV KAFKA_BROKER=localhost:9092 \
@@ -45,13 +54,8 @@ RUN touch /src/alerts_service/__init__.py \
     /src/collector_service/__init__.py \
     /src/flask_api/__init__.py
 
-# Use a wrapper script to load mocks before running pdoc
-RUN echo '#!/bin/python3\nimport mock_kafka\nimport pdoc.__main__\npdoc.__main__.main()' > /src/run_pdoc.py && \
+# Create wrapper script
+RUN echo '#!/bin/python3\nimport mock_kafka\nimport sys\nfrom pdoc.cli import main\nsys.argv.extend(["-o", "/output", "alerts_service", "analytics_service", "collector_service", "flask_api", "sensor_script.py"])\nmain()' > /src/run_pdoc.py && \
     chmod +x /src/run_pdoc.py
 
-CMD ["python", "/src/run_pdoc.py", "-o", "/output", \
-     "alerts_service", \
-     "analytics_service", \
-     "collector_service", \
-     "flask_api", \
-     "sensor_script.py"]
+CMD ["python", "/src/run_pdoc.py"]
