@@ -1,4 +1,4 @@
-name: Generate & Deploy Docs
+name: Generate & Deploy Service Docs
 
 on:
   push:
@@ -17,20 +17,56 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Build docs Docker image
-        run: docker build -t docs_generator -f docs_generator/Dockerfile .
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-      - name: Generate docs
+      - name: Install dependencies
         run: |
-          mkdir -p docs
-          docker run --rm \
-            -v ${PWD}/alerts_service:/app/src/alerts_service:ro \
-            -v ${PWD}/analytics_service:/app/src/analytics_service:ro \
-            -v ${PWD}/collector_service:/app/src/collector_service:ro \
-            -v ${PWD}/flask_api:/app/src/flask_api:ro \
-            -v ${PWD}/sensor_script.py:/app/src/sensor_script.py:ro \
-            -v ${PWD}/docs:/app/output \
-            docs_generator
+          pip install pdoc
+
+      - name: Generate Analytics Service Docs
+        run: |
+          cd analytics_service
+          pip install -r requirements.txt
+          pdoc -o ../docs/analytics app.py models.py
+
+      - name: Generate Collector Service Docs
+        run: |
+          cd collector_service
+          pip install -r requirements.txt
+          pdoc -o ../docs/collector bridge.py
+
+      - name: Generate Flask API Docs
+        run: |
+          cd flask_api
+          pip install -r requirements.txt
+          pdoc -o ../docs/api app.py
+
+      - name: Generate Alerts Service Docs
+        run: |
+          cd alerts_service
+          pip install -r requirements.txt
+          pdoc -o ../docs/alerts app.py
+
+      - name: Create Index Page
+        run: |
+          echo '<!DOCTYPE html>
+          <html>
+          <head>
+              <title>IoT Monitoring Documentation</title>
+          </head>
+          <body>
+              <h1>IoT Monitoring Services Documentation</h1>
+              <ul>
+                  <li><a href="analytics/app.html">Analytics Service</a></li>
+                  <li><a href="collector/bridge.html">Collector Service</a></li>
+                  <li><a href="api/app.html">Flask API</a></li>
+                  <li><a href="alerts/app.html">Alerts Service</a></li>
+              </ul>
+          </body>
+          </html>' > docs/index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
