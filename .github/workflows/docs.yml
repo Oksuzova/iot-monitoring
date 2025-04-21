@@ -24,11 +24,11 @@ jobs:
         run: |
           mkdir -p docs
           docker run --rm \
-            -v ${PWD}/alerts_service:/app/src/alerts_service \
-            -v ${PWD}/analytics_service:/app/src/analytics_service \
-            -v ${PWD}/collector_service:/app/src/collector_service \
-            -v ${PWD}/flask_api:/app/src/flask_api \
-            -v ${PWD}/sensor_script.py:/app/src/sensor_script.py \
+            -v ${PWD}/alerts_service:/app/src/alerts_service:ro \
+            -v ${PWD}/analytics_service:/app/src/analytics_service:ro \
+            -v ${PWD}/collector_service:/app/src/collector_service:ro \
+            -v ${PWD}/flask_api:/app/src/flask_api:ro \
+            -v ${PWD}/sensor_script.py:/app/src/sensor_script.py:ro \
             -v ${PWD}/docs:/app/output \
             docs_generator
 

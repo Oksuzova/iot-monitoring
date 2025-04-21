@@ -1,6 +1,13 @@
 import os
 import pdoc
 import sys
+from mocks import setup_mocks
+
+# Setup mocks first
+setup_mocks()
+
+# Ensure output directory exists
+os.makedirs("/app/output", exist_ok=True)
 
 modules = [
     "alerts_service",
@@ -15,7 +22,7 @@ pdoc.render.configure(docformat="google", show_source=False)
 for module in modules:
     try:
         html = pdoc.pdoc(module)
-        output_file = os.path.join("/output", f"{module}.html")
+        output_file = os.path.join("/app/output", f"{module}.html")
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(html)
     except Exception as e:
@@ -28,5 +35,5 @@ for module in modules:
     index += f'<li><a href="{module}.html">{module}</a></li>'
 index += "</ul></body></html>"
 
-with open("/output/index.html", "w") as f:
+with open("/app/output/index.html", "w") as f:
     f.write(index)
