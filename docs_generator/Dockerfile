@@ -11,7 +11,9 @@ RUN pip install --no-cache-dir \
     kafka-python \
     pandas \
     SQLAlchemy \
-    psycopg2-binary
+    psycopg2-binary \
+    python-dotenv
+
 
 RUN pdoc -o /output \
     alerts_service \
