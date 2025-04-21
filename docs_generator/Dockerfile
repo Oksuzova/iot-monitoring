@@ -22,7 +22,8 @@ class MockKafka:\n\
 sys.modules["kafka"] = MockKafka()\n\
 sys.modules["kafka.consumer"] = MagicMock()\n\
 sys.modules["kafka.consumer.group"] = MagicMock()\n\
-sys.modules["kafka.errors"] = MagicMock()' > /src/mock_kafka.py
+sys.modules["kafka.errors"] = MagicMock()\n\
+sys.modules["paho.mqtt.client"] = MagicMock()' > /src/mock_modules.py
 
 # Create mock environment variables
 ENV KAFKA_BROKER=localhost:9092 \
@@ -55,7 +56,20 @@ RUN touch /src/alerts_service/__init__.py \
     /src/flask_api/__init__.py
 
 # Create wrapper script
-RUN echo '#!/bin/python3\nimport mock_kafka\nimport sys\nfrom pdoc.cli import main\nsys.argv.extend(["-o", "/output", "alerts_service", "analytics_service", "collector_service", "flask_api", "sensor_script.py"])\nmain()' > /src/run_pdoc.py && \
+RUN echo '#!/bin/python3\n\
+import mock_modules\n\
+import sys\n\
+import pdoc\n\
+\n\
+modules = [\n\
+    "alerts_service",\n\
+    "analytics_service",\n\
+    "collector_service",\n\
+    "flask_api",\n\
+    "sensor_script"\n\
+]\n\
+\n\
+pdoc.pdoc(*modules, output_dir="/output")' > /src/run_pdoc.py && \
     chmod +x /src/run_pdoc.py
 
 CMD ["python", "/src/run_pdoc.py"]
