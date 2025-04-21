@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     python-dotenv
 
+# Create a mock implementation script
+RUN echo 'import sys\nfrom unittest.mock import MagicMock\n\nsys.modules["kafka"] = MagicMock()\nsys.modules["kafka.consumer"] = MagicMock()\nsys.modules["kafka.consumer.group"] = MagicMock()\nsys.modules["kafka.errors"] = MagicMock()' > /src/mock_kafka.py
+
 # Create mock environment variables
 ENV KAFKA_BROKER=localhost:9092 \
     MQTT_BROKER=localhost \
@@ -22,29 +25,31 @@ ENV KAFKA_BROKER=localhost:9092 \
     DB_PORT=5432 \
     DB_NAME=sensors \
     DB_USER=user \
-    DB_PASSWORD=password
+    DB_PASSWORD=password \
+    PYTHONPATH=/src
 
-# Create a mock directory structure
+# Create directory structure and copy files
 RUN mkdir -p /src/alerts_service \
     /src/analytics_service \
     /src/collector_service \
     /src/flask_api
 
-# Copy only the necessary Python files for documentation
 COPY alerts_service/*.py /src/alerts_service/
 COPY analytics_service/*.py /src/analytics_service/
 COPY collector_service/*.py /src/collector_service/
 COPY flask_api/*.py /src/flask_api/
 COPY sensor_script.py /src/
 
-# Create mock __init__.py files
 RUN touch /src/alerts_service/__init__.py \
     /src/analytics_service/__init__.py \
     /src/collector_service/__init__.py \
     /src/flask_api/__init__.py
 
-# Generate documentation
-CMD ["pdoc", "-o", "/output", \
+# Use a wrapper script to load mocks before running pdoc
+RUN echo '#!/bin/python3\nimport mock_kafka\nimport pdoc.__main__\npdoc.__main__.main()' > /src/run_pdoc.py && \
+    chmod +x /src/run_pdoc.py
+
+CMD ["python", "/src/run_pdoc.py", "-o", "/output", \
      "alerts_service", \
      "analytics_service", \
      "collector_service", \
