@@ -12,8 +12,9 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     python-dotenv
 
-# Create mock modules script
+# Create comprehensive mock modules script
 RUN echo 'import sys\nfrom unittest.mock import MagicMock\n\n\
+# Mock Kafka\n\
 class MockKafka:\n\
     Consumer = MagicMock()\n\
     KafkaConsumer = MagicMock()\n\
@@ -23,7 +24,36 @@ sys.modules["kafka"] = MockKafka()\n\
 sys.modules["kafka.consumer"] = MagicMock()\n\
 sys.modules["kafka.consumer.group"] = MagicMock()\n\
 sys.modules["kafka.errors"] = MagicMock()\n\
-sys.modules["paho.mqtt.client"] = MagicMock()' > /src/mock_modules.py
+\n\
+# Mock MQTT\n\
+sys.modules["paho"] = MagicMock()\n\
+sys.modules["paho.mqtt"] = MagicMock()\n\
+sys.modules["paho.mqtt.client"] = MagicMock()\n\
+\n\
+# Mock SQLAlchemy\n\
+class MockEngine:\n\
+    def connect(self):\n\
+        return MagicMock()\n\
+    def begin(self):\n\
+        return MagicMock()\n\
+    def raw_connection(self):\n\
+        return MagicMock()\n\
+\n\
+class MockSQLAlchemy:\n\
+    def create_engine(self, *args, **kwargs):\n\
+        return MockEngine()\n\
+    Column = MagicMock()\n\
+    Integer = MagicMock()\n\
+    Float = MagicMock()\n\
+    String = MagicMock()\n\
+    DateTime = MagicMock()\n\
+    ForeignKey = MagicMock()\n\
+    create_engine = MagicMock(return_value=MockEngine())\n\
+\n\
+sys.modules["sqlalchemy"] = MockSQLAlchemy()\n\
+sys.modules["sqlalchemy.orm"] = MagicMock()\n\
+sys.modules["sqlalchemy.ext"] = MagicMock()\n\
+sys.modules["sqlalchemy.ext.declarative"] = MagicMock()' > /src/mock_modules.py
 
 # Create mock environment variables
 ENV KAFKA_BROKER=localhost:9092 \
