@@ -58,6 +58,7 @@ RUN touch /src/alerts_service/__init__.py \
 # Create wrapper script
 RUN echo '#!/bin/python3\n\
 import mock_modules\n\
+import os\n\
 import sys\n\
 import pdoc\n\
 \n\
@@ -69,7 +70,12 @@ modules = [\n\
     "sensor_script"\n\
 ]\n\
 \n\
-pdoc.pdoc(*modules, output_dir="/output")' > /src/run_pdoc.py && \
+for module in modules:\n\
+    pdoc.render.configure(docformat="google")\n\
+    doc = pdoc.pdoc(module)\n\
+    output_file = os.path.join("/output", f"{module}.html")\n\
+    with open(output_file, "w", encoding="utf-8") as f:\n\
+        f.write(doc)' > /src/run_pdoc.py && \
     chmod +x /src/run_pdoc.py
 
 CMD ["python", "/src/run_pdoc.py"]
