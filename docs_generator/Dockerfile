@@ -44,7 +44,7 @@ RUN touch /src/alerts_service/__init__.py \
     /src/flask_api/__init__.py
 
 # Generate documentation
-CMD ["pdoc", "--html", "--output-dir", "/output", \
+CMD ["pdoc", "-o", "/output", \
      "alerts_service", \
      "analytics_service", \
      "collector_service", \
