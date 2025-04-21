@@ -5,6 +5,14 @@ RUN pip install --no-cache-dir pdoc
 WORKDIR /src
 COPY . .
 
+RUN pip install --no-cache-dir \
+    pdoc \
+    requests \
+    kafka-python \
+    pandas \
+    SQLAlchemy \
+    psycopg2-binary
+
 RUN pdoc -o /output \
     alerts_service \
     analytics_service \
