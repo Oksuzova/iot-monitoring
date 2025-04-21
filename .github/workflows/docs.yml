@@ -1,0 +1,29 @@
+name: Generate & Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build docs Docker image
+        run: docker build -t docs_generator -f docs_generator/Dockerfile .
+
+      - name: Generate docs into /docs
+        run: |
+          mkdir docs
+          docker run --rm -v ${{ github.workspace }}/docs:/output docs_generator
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages

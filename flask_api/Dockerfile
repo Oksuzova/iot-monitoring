@@ -15,5 +15,5 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Define the command to start the Flask API service
-# Uses Python interpreter to run app.py as the entry point
+# Uses Python interpreter to run serve-doc.py as the entry point
 CMD ["python", "app.py"]

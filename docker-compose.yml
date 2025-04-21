@@ -117,6 +117,17 @@ services:
     networks:
       - iot_network
 
+  docs_generator:
+    build: ./docs_generator
+    depends_on:
+      - kafka
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docs:/docs
+    networks:
+      - iot_network
+
 # Named volumes for persistent data storage
 volumes:
   postgres_data:
