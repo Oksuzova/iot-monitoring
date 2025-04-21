@@ -4,8 +4,17 @@ from unittest.mock import MagicMock
 from .kafka_mock import MockKafka
 from .mqtt_mock import mock_mqtt
 from .sqlalchemy_mock import MockSQLAlchemy
+from .models_mock import MockBase, MockSensorData, MockAlert
+
 
 def setup_mocks():
+    # Setup models mock
+    models_mock = MagicMock()
+    models_mock.Base = MockBase
+    models_mock.SensorData = MockSensorData
+    models_mock.Alert = MockAlert
+    sys.modules["models"] = models_mock
+
     # Setup Kafka mocks
     sys.modules["kafka"] = MockKafka()
     sys.modules["kafka.consumer"] = MagicMock()
