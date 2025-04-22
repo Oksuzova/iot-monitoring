@@ -1,5 +1,0 @@
-kafka-python==2.0.3
-requests
-SQLAlchemy
-psycopg2-binary
-dotenv
