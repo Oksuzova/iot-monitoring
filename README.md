@@ -72,6 +72,7 @@ This will:
 - **API & UI**: [http://localhost:5001/](http://localhost:5001/)
 
 ![img.png](img.png)
+![img_3.png](img_3.png)
 
 - **Database**: PostgreSQL running on `localhost:5432`  
   Credentials:
