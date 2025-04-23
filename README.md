@@ -18,22 +18,14 @@ This project is a distributed system for real-time ingestion, storage, analysis,
 
 ```mermaid
 flowchart TD
-    A0["Sensor Data Generator
-"]
-    A1["Docker Compose Orchestration
-"]
-    A2["MQTT-to-Kafka Bridge
-"]
-    A3["Flask Database Setup
-"]
-    A4["Flask API Endpoints
-"]
-    A5["Kafka Consumer for Data Ingestion
-"]
-    A6["Alerts Service
-"]
-    A7["Analytics Service
-"]
+    A0["Sensor Data Generator"]
+    A1["Docker Compose Orchestration"]
+    A2["MQTT-to-Kafka Bridge"]
+    A3["Flask Database Setup"]
+    A4["Flask API Endpoints"]
+    A5["Kafka Consumer for Data Ingestion"]
+    A6["Alerts Service"]
+    A7["Analytics Service"]
     A1 -- "Spins up" --> A0
     A0 -- "Publishes sensor data" --> A2
     A2 -- "Publishes to Kafka" --> A5
@@ -109,3 +101,11 @@ docker exec -it iot-monitoring-flask_api-1 python -m unittest test_app.py -v
 ```
 
 ![img_1.png](img_1.png)
+
+### 6. Sending Alerts to Telegram
+You can set up alerts to be sent to your Telegram bot. 
+Make sure to set the `BOT_TOKEN` and `CHAT_ID` environment variables in your `.env` file.
+
+Alerts will be sent when sensor readings exceed predefined thresholds.
+
+![img_2.png](img_2.png)
