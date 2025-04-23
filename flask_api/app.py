@@ -22,6 +22,7 @@ from flask import render_template
 app = Flask(__name__)
 init_db()
 
+
 @app.route("/")
 def dashboard():
     """Render the main dashboard page.
