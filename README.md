@@ -67,6 +67,8 @@ This will:
 - Build all services (API, Analytics, Alerts, Collector)
 - Automatically connect and orchestrate the data flow
 
+![img_4.png](img_4.png)
+
 ### 3. Access the System
 
 - **API & UI**: [http://localhost:5001/](http://localhost:5001/)
